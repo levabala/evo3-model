@@ -1,6 +1,6 @@
 {
-  "name": "ev3-model",
-  "version": "0.0.3",
+  "name": "evo3-model",
+  "version": "0.0.4",
   "license": "MIT",
   "scripts": {
     "type-check": "tsc --noEmit",
