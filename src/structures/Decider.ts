@@ -1,27 +1,87 @@
 import { ActionInteraction, ActionMove, Creature } from './Creature';
+import { Net } from './Net';
 import { Cell } from './SimMap';
 
-export class Decider {
-  net: any;
-}
+export class DeciderMovement {
+  net: Net;
 
-// TODO: write deciders and net
-export class DeciderMovement extends Decider {
+  constructor(net?: Net) {
+    this.net = net || new Net(36, 18, 5);
+  }
+
+  // TODO: create abstract class with "merge" method
   merge(decider: DeciderMovement): DeciderMovement {
-    return this;
+    const middle = Math.floor(this.net.countHidden / 2);
+    const neuronsLeft = this.net.hiddenNeurons.slice(0, middle);
+    const neuronsRight = decider.net.hiddenNeurons.slice(
+      middle,
+      decider.net.countHidden
+    );
+
+    return new DeciderMovement(
+      new Net(36, 18, 5, neuronsLeft.concat(neuronsRight))
+    );
   }
 
   decide(cells: Cell[]): ActionMove {
-    return ActionMove.Nothing;
+    const colors = cells.map(({ foodColor }) => foodColor);
+    const amounts = cells.map(({ foodAmount }) => foodAmount);
+
+    const inputs = colors.concat(amounts);
+
+    const outputs = this.net.calc(inputs);
+    const maxOutput = Math.max(...outputs);
+
+    const maxIndex = outputs.findIndex((val) => val === maxOutput);
+    const indexToAction: ActionMove[] = [
+      ActionMove.Nothing,
+      ActionMove.MoveUp,
+      ActionMove.MoveRight,
+      ActionMove.MoveLeft,
+      ActionMove.MoveUp,
+    ];
+
+    const action = indexToAction[maxIndex];
+
+    return action;
   }
 }
 
-export class DeciderInteraction extends Decider {
+export class DeciderInteraction {
+  net: Net;
+
+  constructor(net?: Net) {
+    this.net = net || new Net(2, 3, 3);
+  }
+
   decide(creature: Creature): ActionInteraction {
-    return ActionInteraction.Nothing;
+    const inputs = [creature.hp, creature.color];
+    const outputs = this.net.calc(inputs);
+
+    const maxOutput = Math.max(...outputs);
+
+    const maxIndex = outputs.findIndex((val) => val === maxOutput);
+    const indexToAction: ActionInteraction[] = [
+      ActionInteraction.Nothing,
+      ActionInteraction.Pair,
+      ActionInteraction.Attack,
+    ];
+
+    const action = indexToAction[maxIndex];
+
+    return action;
   }
 
   merge(decider: DeciderInteraction): DeciderInteraction {
-    return this;
+    const middle = Math.floor(this.net.countHidden / 2);
+    const neuronsLeft = this.net.hiddenNeurons.slice(0, middle);
+    const neuronsRight = decider.net.hiddenNeurons.slice(
+      middle,
+      decider.net.countHidden
+    );
+
+    return new DeciderInteraction(
+      new Net(2, 3, 3, neuronsLeft.concat(neuronsRight))
+    );
   }
 }

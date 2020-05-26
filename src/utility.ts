@@ -11,3 +11,7 @@ export function pickRandom<T>(arr: T[]) {
   const index = random(0, arr.length - 1);
   return arr[index];
 }
+
+export function beOrNotToBe<T>(be: T, notToBe: T) {
+  return Math.random() >= 0.5 ? be : notToBe;
+}

@@ -21,5 +21,6 @@ export interface Creature {
   deciderInteraction: DeciderInteraction;
   x: number;
   y: number;
+  color: number;
   dead?: boolean;
 }

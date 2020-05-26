@@ -10,16 +10,25 @@ export class Net {
   hiddenNeurons: Neuron[];
   countInputs: number;
   countOutputs: number;
+  countHidden: number;
 
-  constructor(countInputs: number, countOutputs: number, countHidden: number) {
+  constructor(
+    countInputs: number,
+    countHidden: number,
+    countOutputs: number,
+    hiddenNeurons?: Neuron[]
+  ) {
     this.countInputs = countInputs;
     this.countOutputs = countOutputs;
+    this.countHidden = countHidden;
 
-    this.hiddenNeurons = shell(countHidden).map(() => ({
-      weightsInput: shell(countInputs).map(() => 0.1),
-      weightsOutput: shell(countInputs).map(() => 0.1),
-      activationFunc: Math.tanh,
-    }));
+    this.hiddenNeurons =
+      hiddenNeurons ||
+      shell(countHidden).map(() => ({
+        weightsInput: shell(countInputs).map(() => 0.1),
+        weightsOutput: shell(countInputs).map(() => 0.1),
+        activationFunc: Math.tanh,
+      }));
   }
 
   calc(inputs: number[]) {

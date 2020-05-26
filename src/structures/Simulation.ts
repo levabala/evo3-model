@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 
-import { pickRandom } from '../utility';
+import { beOrNotToBe as beornottobe, pickRandom } from '../utility';
 import { ActionInteraction, ActionMove, Creature } from './Creature';
 import { DeciderInteraction, DeciderMovement } from './Decider';
 import { Cell, SimMap } from './SimMap';
@@ -49,6 +49,7 @@ export class Simulation {
       id: v4(),
       x: cell.x,
       y: cell.y,
+      color: Math.random() * 2 - 1, // -1..1
     };
 
     this.addCreature(creature, cell);
@@ -108,17 +109,24 @@ export class Simulation {
       creature1.hp /= 2;
       creature2.hp /= 2;
 
+      const deciderInteraction = beornottobe(
+        creature1.deciderInteraction.merge(creature2.deciderInteraction),
+        creature2.deciderInteraction.merge(creature1.deciderInteraction)
+      );
+
+      const deciderMovement = beornottobe(
+        creature1.deciderMovement.merge(creature2.deciderMovement),
+        creature2.deciderMovement.merge(creature1.deciderMovement)
+      );
+
       const newCreature: Creature = {
-        deciderInteraction: creature1.deciderInteraction.merge(
-          creature2.deciderInteraction
-        ),
-        deciderMovement: creature1.deciderMovement.merge(
-          creature2.deciderMovement
-        ),
+        deciderInteraction,
+        deciderMovement,
         hp: newCreatureHp,
         id: v4(),
         x: freeCell.x,
         y: freeCell.y,
+        color: (creature1.color + creature2.color) / 2,
       };
 
       this.addCreature(newCreature);
