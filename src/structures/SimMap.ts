@@ -9,6 +9,13 @@ export interface Cell {
   y: number;
 }
 
+export const emptyCell: Cell = {
+  foodAmount: 0,
+  foodColor: 0,
+  x: -1,
+  y: -1,
+};
+
 export class SimMap {
   cells: Cell[];
 
@@ -41,13 +48,13 @@ export class SimMap {
   }
 
   getRanges(xFrom: number, xTo: number, yFrom: number, yTo: number) {
-    const chunksCount = yTo - yFrom;
+    const chunksCount = yTo - yFrom + 1;
     const chunks = shell(chunksCount)
       .map((_, y) => {
         const lineStart = y * this.width;
         return { from: lineStart + xFrom, to: lineStart + xTo };
       })
-      .map(({ from, to }) => this.cells.slice(from, to));
+      .map(({ from, to }) => this.cells.slice(from, to + 1));
 
     return chunks;
   }

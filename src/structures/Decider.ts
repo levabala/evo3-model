@@ -6,7 +6,7 @@ export class DeciderMovement {
   net: Net;
 
   constructor(net?: Net) {
-    this.net = net || new Net(36, 18, 5);
+    this.net = net || new Net(37, 18, 5);
   }
 
   // TODO: create abstract class with "merge" method
@@ -19,15 +19,16 @@ export class DeciderMovement {
     );
 
     return new DeciderMovement(
-      new Net(36, 18, 5, neuronsLeft.concat(neuronsRight))
+      new Net(37, 18, 5, neuronsLeft.concat(neuronsRight))
     );
   }
 
   decide(cells: Cell[]): ActionMove {
     const colors = cells.map(({ foodColor }) => foodColor);
     const amounts = cells.map(({ foodAmount }) => foodAmount);
+    const noize = Math.random() - 0.5;
 
-    const inputs = colors.concat(amounts);
+    const inputs = [noize, ...colors, ...amounts];
 
     const outputs = this.net.calc(inputs);
     const maxOutput = Math.max(...outputs);
@@ -51,11 +52,13 @@ export class DeciderInteraction {
   net: Net;
 
   constructor(net?: Net) {
-    this.net = net || new Net(2, 3, 3);
+    this.net = net || new Net(3, 3, 3);
   }
 
   decide(creature: Creature): ActionInteraction {
-    const inputs = [creature.hp, creature.color];
+    const noize = Math.random() - 0.5;
+
+    const inputs = [noize, creature.hp, creature.color];
     const outputs = this.net.calc(inputs);
 
     const maxOutput = Math.max(...outputs);
@@ -81,7 +84,7 @@ export class DeciderInteraction {
     );
 
     return new DeciderInteraction(
-      new Net(2, 3, 3, neuronsLeft.concat(neuronsRight))
+      new Net(3, 3, 3, neuronsLeft.concat(neuronsRight))
     );
   }
 }

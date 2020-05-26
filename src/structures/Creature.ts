@@ -1,17 +1,17 @@
 import { DeciderInteraction, DeciderMovement } from './Decider';
 
 export enum ActionInteraction {
-  Nothing,
-  Attack,
-  Pair,
+  Nothing = "Nothing",
+  Attack = "Attack",
+  Pair = "Pair",
 }
 
 export enum ActionMove {
-  Nothing,
-  MoveLeft,
-  MoveRight,
-  MoveUp,
-  MoveDown,
+  Nothing = "Nothing",
+  MoveLeft = "MoveLeft",
+  MoveRight = "MoveRight",
+  MoveUp = "MoveUp",
+  MoveDown = "MoveDown",
 }
 
 export interface Creature {

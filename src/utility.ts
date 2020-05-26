@@ -1,3 +1,5 @@
+import { isVerbose } from './structures/Simulation';
+
 export function shell(length: number) {
   return new Array(length).fill(undefined);
 }
@@ -14,4 +16,8 @@ export function pickRandom<T>(arr: T[]) {
 
 export function beOrNotToBe<T>(be: T, notToBe: T) {
   return Math.random() >= 0.5 ? be : notToBe;
+}
+
+export function log(...args: any) {
+  if (isVerbose()) console.log(...args);
 }
