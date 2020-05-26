@@ -1,13 +1,16 @@
 {
   "name": "evo3-model",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
+  "main": "lib/index.js",
   "scripts": {
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
     "build": "npm run build:types && npm run build:js",
-    "build:types": "tsc --emitDeclarationOnly",
-    "build:js": "babel src --out-dir lib --extensions \".ts,.tsx\" --source-maps inline"
+    "build:watch": "npm run build:types:watch & npm run build:js:watch",
+    "build:types:watch": "tsc -w --emitDeclarationOnly",
+    "build:js": "babel src --out-dir lib --extensions \".ts,.tsx\" --source-maps inline",
+    "build:js:watch": "babel src --watch --out-dir lib --extensions \".ts,.tsx\" --source-maps inline"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.3",
