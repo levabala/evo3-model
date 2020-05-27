@@ -12,8 +12,15 @@ export class Simulation {
   readonly map: SimMap;
   creatures: Creature[] = [];
 
+  appropriarityScale = 2;
   maxCreatureHp = 10;
-  hpDowngradePerTick = 0.1;
+  hpDowngradePerTick = 0.01;
+  foodPerCellPerTick = 0.2;
+  maxCellFood = 4;
+  maxAge = 10000;
+  ageFeedingCoeff = (age: number) => (1 / (age + 1)) ** (1 / 6);
+
+  ticksPast = 0;
 
   constructor(width: number, height: number, verbose = false) {
     this.map = new SimMap(width, height);
@@ -80,12 +87,78 @@ export class Simulation {
       id: v4(),
       x: cell.x,
       y: cell.y,
-      color: Math.random() * 2 - 1, // -1..1
+      color: Math.random(), // 0..1maxCellFood
+      age: 0,
     };
 
     this.addCreature(creature, cell);
 
     return "Ok";
+  }
+
+  spawnFood() {
+    this.map.cells.forEach(
+      (cell) =>
+        (cell.foodAmount = Math.min(
+          this.foodPerCellPerTick * (cell.creature ? 0 : 1) + cell.foodAmount,
+          this.maxCellFood
+        ))
+    );
+  }
+
+  processSplitting(creature: Creature) {
+    if (creature.hp < this.maxCreatureHp * 0.9) return;
+
+    const spawnRadius = 1;
+    const cellsAround: Cell[] = this.map
+      .getCellsInRadius(creature.x, creature.y, spawnRadius)
+      .flat();
+    const freeCell = cellsAround.find((cell) =>
+      this.isCellFree(cell.x, cell.y)
+    );
+
+    if (!freeCell) return;
+
+    const newCreature: Creature = {
+      age: 0,
+      color: creature.color + ((Math.random() - 0.5) * 2) / 10,
+      deciderInteraction: creature.deciderInteraction.mutated(),
+      deciderMovement: creature.deciderMovement.mutated(),
+      hp: creature.hp / 2,
+      id: v4(),
+      x: freeCell.x,
+      y: freeCell.y,
+    };
+
+    creature.hp /= 2;
+    this.addCreature(newCreature, freeCell);
+  }
+
+  processAgeing(creature: Creature) {
+    creature.age++;
+  }
+
+  processFeeding(creature: Creature) {
+    const cell = this.map.getCellOfCreature(creature);
+
+    const foodAmountToEat = cell.foodAmount / 2;
+    const appropriarity =
+      Math.abs(1 - cell.foodColor - creature.color) ** this.appropriarityScale;
+    const ageCoeff = this.ageFeedingCoeff(creature.age);
+
+    const foodCoeff = appropriarity * ageCoeff;
+    const foodGained = foodAmountToEat * foodCoeff;
+    creature.hp = Math.min(creature.hp + foodGained, this.maxCreatureHp);
+
+    log(
+      `feeding +${foodGained.toFixed(2)} via coeff ${foodCoeff.toFixed(
+        2
+      )} and food ${cell.foodAmount} (appropriarity: ${appropriarity.toFixed(
+        2
+      )}, ageCoeef: ${ageCoeff.toFixed(2)}, age: ${creature.age})`
+    );
+
+    cell.foodAmount /= 2;
   }
 
   processMovement(creature: Creature, cellsAround: Cell[]) {
@@ -105,8 +178,22 @@ export class Simulation {
     const delta = moveMap[actionMove];
     if (!delta.dx && !delta.dy) return;
 
-    const x = creature.x + delta.dx;
-    const y = creature.y + delta.dy;
+    const xRaw = creature.x + delta.dx;
+    const yRaw = creature.y + delta.dy;
+
+    const x =
+      xRaw === 1 && delta.dx == -1
+        ? this.map.width - 2
+        : xRaw === this.map.width - 2 && delta.dx == 1
+        ? 1
+        : xRaw;
+    const y =
+      yRaw === 1 && delta.dy == -1
+        ? this.map.height - 2
+        : yRaw === this.map.height - 2 && delta.dy == 1
+        ? 1
+        : yRaw;
+
     const cellTarget = this.map.getCell(x, y);
 
     const couldBeDone = this.isCellFree(x, y);
@@ -127,27 +214,29 @@ export class Simulation {
       log("interact: fight");
       if (creature1.hp > creature2.hp) this.removeCreature(creature2);
       else if (creature1.hp < creature2.hp) this.removeCreature(creature1);
+      else this.removeCreature(beornottobe(creature1, creature2));
     };
 
     const pair = () => {
-      log("interact: pair");
-
       const newCreatureHp = creature1.hp / 2 + creature2.hp / 2;
+      log(
+        `interact: pair (${Math.round(
+          (newCreatureHp / this.maxCreatureHp) * 100
+        )}%)`
+      );
 
       creature1.hp /= 2;
       creature2.hp /= 2;
 
-      if (
-        creature1.hp < this.maxCreatureHp / 2 ||
-        creature2.hp < this.maxCreatureHp / 2
-      )
-        return;
+      if (newCreatureHp < this.maxCreatureHp / 2) return;
 
       const spawnRadius = 1;
       const cellsAround: Cell[] = this.map
         .getCellsInRadius(creature1.x, creature1.y, spawnRadius)
         .flat();
-      const freeCell = cellsAround.find((cell) => !cell.creature);
+      const freeCell = cellsAround.find((cell) =>
+        this.isCellFree(cell.x, cell.y)
+      );
 
       if (!freeCell) return;
 
@@ -169,9 +258,11 @@ export class Simulation {
         x: freeCell.x,
         y: freeCell.y,
         color: (creature1.color + creature2.color) / 2,
+        age: 0,
       };
 
       this.addCreature(newCreature, freeCell);
+      log("-- new child");
     };
 
     const nothing = () => {
@@ -192,12 +283,32 @@ export class Simulation {
   }
 
   tick() {
-    log("tick creatures:", this.creatures.length);
+    log(
+      "tick creatures:",
+      this.creatures.length,
+      "total hp:",
+      this.creatures.reduce((acc, val) => acc + val.hp, 0)
+    );
 
+    // process food spawning
+    this.spawnFood();
+
+    // process ageing
+    this.creatures.forEach((creature) => {
+      this.processAgeing(creature);
+    });
+
+    // process death
     this.creatures.forEach((creature) => {
       creature.hp -= this.hpDowngradePerTick;
 
-      if (creature.hp <= 0) creature.dead = true;
+      if (creature.hp <= 0 || creature.age > this.maxAge)
+        this.removeCreature(creature);
+    });
+
+    // process feeding
+    this.creatures.forEach((creature) => {
+      this.processFeeding(creature);
     });
 
     const cellsAroundEachCreature = this.creatures.map((creature) => {
@@ -209,7 +320,7 @@ export class Simulation {
       return cellsAround;
     });
 
-    log({ cellsAroundEachCreature });
+    // log({ cellsAroundEachCreature });
 
     // processing movement
     this.creatures.forEach((creature, i) => {
@@ -232,5 +343,12 @@ export class Simulation {
         this.processInteraction(creatureWho, creatureOther)
       );
     });
+
+    // process splitting
+    this.creatures.forEach((creature) => {
+      this.processSplitting(creature);
+    });
+
+    this.ticksPast++;
   }
 }

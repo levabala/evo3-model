@@ -10,7 +10,7 @@ export class DeciderMovement {
   }
 
   // TODO: create abstract class with "merge" method
-  merge(decider: DeciderMovement): DeciderMovement {
+  merge(decider: DeciderMovement, mutateRate = 0.01): DeciderMovement {
     const middle = Math.floor(this.net.countHidden / 2);
     const neuronsLeft = this.net.hiddenNeurons.slice(0, middle);
     const neuronsRight = decider.net.hiddenNeurons.slice(
@@ -19,7 +19,7 @@ export class DeciderMovement {
     );
 
     return new DeciderMovement(
-      new Net(37, 18, 5, neuronsLeft.concat(neuronsRight))
+      new Net(37, 18, 5, mutateRate, neuronsLeft.concat(neuronsRight))
     );
   }
 
@@ -46,6 +46,12 @@ export class DeciderMovement {
 
     return action;
   }
+
+  mutated(mutateRate = 0.01) {
+    return new DeciderMovement(
+      new Net(3, 3, 3, mutateRate, this.net.hiddenNeurons)
+    );
+  }
 }
 
 export class DeciderInteraction {
@@ -53,6 +59,12 @@ export class DeciderInteraction {
 
   constructor(net?: Net) {
     this.net = net || new Net(3, 3, 3);
+  }
+
+  mutated(mutateRate = 0.01) {
+    return new DeciderInteraction(
+      new Net(3, 3, 3, mutateRate, this.net.hiddenNeurons)
+    );
   }
 
   decide(creature: Creature): ActionInteraction {
@@ -75,7 +87,7 @@ export class DeciderInteraction {
     return action;
   }
 
-  merge(decider: DeciderInteraction): DeciderInteraction {
+  merge(decider: DeciderInteraction, mutateRate = 0.01): DeciderInteraction {
     const middle = Math.floor(this.net.countHidden / 2);
     const neuronsLeft = this.net.hiddenNeurons.slice(0, middle);
     const neuronsRight = decider.net.hiddenNeurons.slice(
@@ -84,7 +96,7 @@ export class DeciderInteraction {
     );
 
     return new DeciderInteraction(
-      new Net(3, 3, 3, neuronsLeft.concat(neuronsRight))
+      new Net(3, 3, 3, mutateRate, neuronsLeft.concat(neuronsRight))
     );
   }
 }

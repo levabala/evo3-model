@@ -1,3 +1,5 @@
+import SimplexNoise from 'simplex-noise';
+
 import { shell } from '../utility';
 import { Creature } from './Creature';
 
@@ -26,13 +28,16 @@ export class SimMap {
     this.width = width;
     this.height = height;
 
+    const simplex = new SimplexNoise();
+    const smooth = 30;
+
     this.cells = shell(width * height).map((_, i) => {
       const x = i % width;
       const y = Math.floor(i / width);
 
       return {
-        foodAmount: 0,
-        foodColor: 0,
+        foodAmount: Infinity,
+        foodColor: (simplex.noise2D(x / smooth, y / smooth) + 1) / 2,
         x,
         y,
       };

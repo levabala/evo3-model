@@ -16,6 +16,7 @@ export class Net {
     countInputs: number,
     countHidden: number,
     countOutputs: number,
+    mutateRate: number = 0.01,
     hiddenNeurons?: Neuron[]
   ) {
     this.countInputs = countInputs;
@@ -23,7 +24,15 @@ export class Net {
     this.countHidden = countHidden;
 
     this.hiddenNeurons =
-      hiddenNeurons ||
+      hiddenNeurons?.map((neuron) => ({
+        activationFunc: neuron.activationFunc,
+        weightsInput: neuron.weightsInput.map(
+          (weight) => (Math.random() - 0.5) * 2 * mutateRate + weight
+        ),
+        weightsOutput: neuron.weightsOutput.map(
+          (weight) => (Math.random() - 0.5) * 2 * mutateRate + weight
+        ),
+      })) ||
       shell(countHidden).map(() => ({
         weightsInput: shell(countInputs).map(() => (Math.random() - 0.5) / 5),
         weightsOutput: shell(countInputs).map(() => (Math.random() - 0.5) / 5),

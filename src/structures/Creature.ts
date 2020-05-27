@@ -23,4 +23,5 @@ export interface Creature {
   y: number;
   color: number;
   dead?: boolean;
+  age: number;
 }
