@@ -35,9 +35,13 @@ export class SimMap {
       const x = i % width;
       const y = Math.floor(i / width);
 
+      const isBorder = x <= 1 || y <= 1 || x >= width - 2 || y >= height - 2;
+
       return {
         foodAmount: Infinity,
-        foodColor: (simplex.noise2D(x / smooth, y / smooth) + 1) / 2,
+        foodColor: isBorder
+          ? -1
+          : (simplex.noise2D(x / smooth, y / smooth) + 1) / 2,
         x,
         y,
       };

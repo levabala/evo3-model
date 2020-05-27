@@ -12,15 +12,25 @@ export class Simulation {
   readonly map: SimMap;
   creatures: Creature[] = [];
 
-  appropriarityScale = 2;
+  appropriarityScale = 1;
   maxCreatureHp = 10;
-  hpDowngradePerTick = 0.01;
-  foodPerCellPerTick = 0.2;
-  maxCellFood = 4;
+  hpDowngradePerTick = 0.05;
+  foodPerCellPerTick = 0.3;
+  maxCellFood = 1;
   maxAge = 10000;
   ageFeedingCoeff = (age: number) => (1 / (age + 1)) ** (1 / 6);
 
   ticksPast = 0;
+  createdByParing = 0;
+  createdBySplitting = 0;
+
+  stopRandomSpawing = false;
+
+  serializeNets() {
+    // return this.creatures.map(creature => creature.deciderMovement.net.)
+  }
+
+  loadCreatures() {}
 
   constructor(width: number, height: number, verbose = false) {
     this.map = new SimMap(width, height);
@@ -74,6 +84,8 @@ export class Simulation {
   }
 
   spawnRandomCreature(): "No free cells" | "Ok" {
+    if (this.stopRandomSpawing) return "Ok";
+
     const freeCells = this.map.cells.filter(({ creature }) => !creature);
     if (!freeCells.length) return "No free cells";
 
@@ -121,7 +133,10 @@ export class Simulation {
 
     const newCreature: Creature = {
       age: 0,
-      color: creature.color + ((Math.random() - 0.5) * 2) / 10,
+      color: Math.min(
+        Math.max(creature.color + ((Math.random() - 0.5) * 2) / 10, 0),
+        1
+      ),
       deciderInteraction: creature.deciderInteraction.mutated(),
       deciderMovement: creature.deciderMovement.mutated(),
       hp: creature.hp / 2,
@@ -132,6 +147,7 @@ export class Simulation {
 
     creature.hp /= 2;
     this.addCreature(newCreature, freeCell);
+    this.createdBySplitting++;
   }
 
   processAgeing(creature: Creature) {
@@ -143,7 +159,8 @@ export class Simulation {
 
     const foodAmountToEat = cell.foodAmount / 2;
     const appropriarity =
-      Math.abs(1 - cell.foodColor - creature.color) ** this.appropriarityScale;
+      (1 - Math.abs(cell.foodColor - creature.color)) **
+      this.appropriarityScale;
     const ageCoeff = this.ageFeedingCoeff(creature.age);
 
     const foodCoeff = appropriarity * ageCoeff;
@@ -159,13 +176,14 @@ export class Simulation {
     );
 
     cell.foodAmount /= 2;
+    // cell.foodAmount -= foodGained;
   }
 
   processMovement(creature: Creature, cellsAround: Cell[]) {
     if (creature.dead) return;
 
     // process movements
-    const actionMove = creature.deciderMovement.decide(cellsAround);
+    const actionMove = creature.deciderMovement.decide(cellsAround, creature);
 
     const moveMap: Record<ActionMove, { dx: number; dy: number }> = {
       [ActionMove.Nothing]: { dx: 0, dy: 0 },
@@ -181,16 +199,20 @@ export class Simulation {
     const xRaw = creature.x + delta.dx;
     const yRaw = creature.y + delta.dy;
 
+    // const x = xRaw;
+    // const y = yRaw;
+
     const x =
-      xRaw === 1 && delta.dx == -1
+      xRaw <= 1 && delta.dx == -1
         ? this.map.width - 2
-        : xRaw === this.map.width - 2 && delta.dx == 1
+        : xRaw >= this.map.width - 2 && delta.dx == 1
         ? 1
         : xRaw;
+
     const y =
-      yRaw === 1 && delta.dy == -1
+      yRaw <= 1 && delta.dy == -1
         ? this.map.height - 2
-        : yRaw === this.map.height - 2 && delta.dy == 1
+        : yRaw >= this.map.height - 2 && delta.dy == 1
         ? 1
         : yRaw;
 
@@ -204,6 +226,8 @@ export class Simulation {
   }
 
   processInteraction(creature1: Creature, creature2: Creature) {
+    return;
+
     if (creature1.dead || creature2.dead) return;
 
     log("interaction");
@@ -262,6 +286,7 @@ export class Simulation {
       };
 
       this.addCreature(newCreature, freeCell);
+      this.createdByParing++;
       log("-- new child");
     };
 

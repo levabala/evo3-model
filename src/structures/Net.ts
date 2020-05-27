@@ -16,7 +16,7 @@ export class Net {
     countInputs: number,
     countHidden: number,
     countOutputs: number,
-    mutateRate: number = 0.01,
+    mutateRate: number = 0,
     hiddenNeurons?: Neuron[]
   ) {
     this.countInputs = countInputs;
@@ -35,7 +35,7 @@ export class Net {
       })) ||
       shell(countHidden).map(() => ({
         weightsInput: shell(countInputs).map(() => (Math.random() - 0.5) / 5),
-        weightsOutput: shell(countInputs).map(() => (Math.random() - 0.5) / 5),
+        weightsOutput: shell(countOutputs).map(() => (Math.random() - 0.5) / 5),
         activationFunc: Math.tanh,
       }));
 
@@ -66,5 +66,24 @@ export class Net {
     // log({ outputs });
 
     return outputs;
+  }
+
+  serialize() {
+    return JSON.stringify(this);
+  }
+
+  static deserialize(str: string) {
+    const {
+      hiddenNeurons: hiddenNeuronsPartial,
+      countInputs,
+      countOutputs,
+      countHidden,
+    } = JSON.parse(str);
+    const hiddenNeurons = hiddenNeuronsPartial.map(
+      (neuronPartial: Omit<Neuron, "activationFunc">) =>
+        ({ ...neuronPartial, activationFunc: Math.tanh } as Neuron)
+    );
+
+    return new Net(countInputs, countHidden, countOutputs, 0, hiddenNeurons);
   }
 }

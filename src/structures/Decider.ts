@@ -6,7 +6,7 @@ export class DeciderMovement {
   net: Net;
 
   constructor(net?: Net) {
-    this.net = net || new Net(37, 18, 5);
+    this.net = net || new Net(10, 4, 4);
   }
 
   // TODO: create abstract class with "merge" method
@@ -19,27 +19,30 @@ export class DeciderMovement {
     );
 
     return new DeciderMovement(
-      new Net(37, 18, 5, mutateRate, neuronsLeft.concat(neuronsRight))
+      new Net(10, 4, 4, mutateRate, neuronsLeft.concat(neuronsRight))
     );
   }
 
-  decide(cells: Cell[]): ActionMove {
-    const colors = cells.map(({ foodColor }) => foodColor);
-    const amounts = cells.map(({ foodAmount }) => foodAmount);
+  decide(cells: Cell[], creature: Creature): ActionMove {
+    const colorsDiffs = cells.map(({ foodColor }) =>
+      Math.abs(foodColor - creature.color)
+    );
+    // const amounts = cells.map(({ foodAmount }) => foodAmount);
     const noize = Math.random() - 0.5;
 
-    const inputs = [noize, ...colors, ...amounts];
+    // const inputs = [noize, ...colorsDiffs, ...amounts];
+    const inputs = [noize, ...colorsDiffs]; // , ...amounts];
 
     const outputs = this.net.calc(inputs);
     const maxOutput = Math.max(...outputs);
 
     const maxIndex = outputs.findIndex((val) => val === maxOutput);
     const indexToAction: ActionMove[] = [
-      ActionMove.Nothing,
       ActionMove.MoveUp,
       ActionMove.MoveRight,
       ActionMove.MoveLeft,
-      ActionMove.MoveUp,
+      ActionMove.MoveDown,
+      // ActionMove.Nothing,
     ];
 
     const action = indexToAction[maxIndex];
@@ -49,7 +52,7 @@ export class DeciderMovement {
 
   mutated(mutateRate = 0.01) {
     return new DeciderMovement(
-      new Net(3, 3, 3, mutateRate, this.net.hiddenNeurons)
+      new Net(10, 4, 4, mutateRate, this.net.hiddenNeurons)
     );
   }
 }
@@ -68,6 +71,8 @@ export class DeciderInteraction {
   }
 
   decide(creature: Creature): ActionInteraction {
+    return ActionInteraction.Nothing;
+
     const noize = Math.random() - 0.5;
 
     const inputs = [noize, creature.hp, creature.color];
